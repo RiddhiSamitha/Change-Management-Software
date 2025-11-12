@@ -1,0 +1,64 @@
+{
+  "users": [
+    {
+      "user_id": "USR-2025-0001",
+      "email": "developer@scms.com",
+      "password_hash": "pbkdf2:sha256:600000$xFxTDfH1SXvQH05P$ffd52ff44fd0d91f9eff840a2bc9cf9d50136d3bf10240920c61f0edcc143a42",
+      "role": "Developer",
+      "created_at": "2025-11-09T12:37:31.264323",
+      "is_active": true,
+      "failed_login_attempts": 0,
+      "mfa_enabled": false
+    },
+    {
+      "user_id": "USR-2025-0002",
+      "email": "qaengineer@scms.com",
+      "password_hash": "pbkdf2:sha256:600000$pLHjVaGHaTpp7SNg$86ca9f2d8ee139f4b7726000e0666dddcb801fcce9127540f01c20208cbf4baf",
+      "role": "QA Engineer",
+      "created_at": "2025-11-09T12:38:09.228312",
+      "is_active": true,
+      "failed_login_attempts": 0,
+      "mfa_enabled": false
+    },
+    {
+      "user_id": "USR-2025-0003",
+      "email": "manager@scms.com",
+      "password_hash": "pbkdf2:sha256:600000$wnIBXrjV7aW2zBcu$67d64b1b40738df75cf270adf30e92326f3ffabb5cd2c236501d32eec55f88e9",
+      "role": "Change Manager",
+      "created_at": "2025-11-09T12:39:16.840489",
+      "is_active": true,
+      "failed_login_attempts": 0,
+      "mfa_enabled": true
+    },
+    {
+      "user_id": "USR-2025-0004",
+      "email": "manchikantisharvani22@gmail.com",
+      "password_hash": "pbkdf2:sha256:600000$SRsGmBWJ0ZNVSmld$10d2d74449ed77b1e241be3d2cc8916d315b8681032b869ecae811ef8de01c2c",
+      "role": "Developer",
+      "created_at": "2025-11-09T14:00:34.211254",
+      "is_active": true,
+      "failed_login_attempts": 0,
+      "mfa_enabled": false
+    },
+    {
+      "user_id": "USR-2025-0005",
+      "email": "riddhisam@gmail.com",
+      "password_hash": "pbkdf2:sha256:600000$4LWQTrMs5QwYwLtt$f9a332450877d284afcb4744715237027848369f57602564cf7dcb3d2e70b0be",
+      "role": "Change Manager",
+      "created_at": "2025-11-09T14:06:11.951032",
+      "is_active": true,
+      "failed_login_attempts": 0,
+      "mfa_enabled": true
+    },
+    {
+      "user_id": "USR-2025-0006",
+      "email": "pes1ug23am165@pesu.pes.edu",
+      "password_hash": "pbkdf2:sha256:600000$KLlybdm0JP8QqQop$51cc968230a17c60211271accd4dd5325e6993d146e5460ccb4f01c96ed2997e",
+      "role": "Developer",
+      "created_at": "2025-11-09T23:14:38.285933",
+      "is_active": true,
+      "failed_login_attempts": 0,
+      "mfa_enabled": false
+    }
+  ]
+}

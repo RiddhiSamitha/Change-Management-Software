@@ -1,0 +1,35 @@
+# ==============================
+# Software Change Management System (SCMS)
+# MERN Stack Project - Team Omega
+# ==============================
+
+# === FRONTEND (scms-frontend) ===
+# React application dependencies
+react==18.x
+react-dom==18.x
+react-router-dom==6.x
+axios==1.x
+tailwindcss==3.x
+lucide-react==0.x
+@headlessui/react==1.x
+@heroicons/react==2.x
+
+# === BACKEND (scms-api) ===
+# Node.js + Express server dependencies
+express==5.1.0
+cors==2.8.5
+dotenv==17.2.3
+mongoose==8.19.3
+bcryptjs==3.0.3
+jsonwebtoken==9.0.2
+
+# === DEV DEPENDENCIES ===
+nodemon==3.1.3
+
+# === DATABASE ===
+# MongoDB Atlas Cloud (free shared cluster)
+mongodb-atlas==M0-tier
+
+# === TOOLING & TESTING ===
+postman==10.x
+git==2.x
