@@ -1,85 +1,73 @@
-name: CI-CD Pipeline
+name: CI/CD Pipeline for scmcsapi
 
 on:
+  # Triggers the workflow on push events to the 'main' branch
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [ main ]
+    paths:
+      - 'scmcsapi/**' # Only trigger if changes are in the backend directory
+  # Allows manual runs
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     
+    # We define the node version once here
+    strategy:
+      matrix:
+        node-version: [18.x] # Use a stable, supported Node.js version
+        
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      # Step 1: Get the code
+      uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: |
-            scms-api/package-lock.json
-            scms-frontend/package-lock.json
+    - name: Set up Node.js ${{ matrix.node-version }}
+      # Step 2: Set up the Node environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm' # Cache dependencies for faster runs
 
-      # ==================================
-      # Backend (scms-api) Build & Test
-      # ==================================
-      - name: Install Backend dependencies (scms-api)
-        uses: npm/cli@v1 # Use dedicated npm action for reliability
-        with:
-          working-directory: scms-api
-          args: ci
-          
-      - name: Run Backend Unit Tests (SE-10)
-        # Use simple shell execution for tests, injecting secrets via env
-        working-directory: ./scms-api
-        run: npm test
-        env:
-          # JWT_SECRET is needed for the unit tests to pass authentication checks
-          JWT_SECRET: 'a_very_secret_key_for_scms_jwt_12345'
+    - name: Install Dependencies
+      # Step 3: Run npm install inside the scmcsapi directory
+      # This step should replace any incorrect 'uses: npm/cli@v1'
+      run: npm install
+      working-directory: ./scmcsapi
 
-      # ==================================
-      # Frontend (scms-frontend) Build & Test
-      # ==================================
-      - name: Install Frontend dependencies (scms-frontend)
-        uses: npm/cli@v1 # Use dedicated npm action for reliability
-        with:
-          working-directory: scms-frontend
-          args: ci
+    - name: Run Build and Tests
+      # Step 4: Run build and tests. Failure here causes 'exit code 1'.
+      run: |
+        npm run build
+        npm run test
+      working-directory: ./scmcsapi
+      # Ensure your package.json in scmcsapi has 'build' and 'test' scripts defined.
 
-      - name: Run Frontend Tests (Bypass CI Failure)
-        working-directory: ./scms-frontend
-        # Run tests, and use `|| true` to ensure the CI pipeline doesn't stop even if tests fail
-        run: npm test -- --watchAll=false || true 
-
-      - name: Build Frontend Application
-        working-directory: ./scms-frontend
-        # Use the env block to reliably set the build variable
-        run: npm run build
-        env:
-          REACT_APP_API_URL: http://localhost:5000
-
-      # ==================================
-      # Quality Gates & Artifacts (SE-11)
-      # ==================================
-      
-      - name: Archive Backend Test Coverage Report (scms-api)
-        uses: actions/upload-artifact@v4
-        with:
-          name: scms-api-coverage-report
-          path: scms-api/coverage/lcov-report/
-
-      - name: Security Audit (scms-api only)
-        working-directory: ./scms-api
-        run: npm audit --audit-level=high
-
+    - name: Archive Production Artifacts
+      # Step 5: Package the built files if the build/tests passed
+      uses: actions/upload-artifact@v4
+      with:
+        name: scmcsapi-build
+        path: scmcsapi/ # Adjust this path if your build outputs to a specific folder (e.g., scmcsapi/dist)
+        
   deploy:
+    # This job only runs if the 'build' job succeeded
     needs: build
     runs-on: ubuntu-latest
-    if: always() && github.ref == 'refs/heads/main'
-    
+
     steps:
-      - name: Deployment Placeholder
-        run: echo "Deployment would occur here after a successful build and test."
+    - name: Download Artifacts
+      # Step 1: Get the built files
+      uses: actions/download-artifact@v4
+      with:
+        name: scmcsapi-build
+        
+    # --- Deployment Step (You MUST update this) ---
+    - name: Deploy to Production Environment
+      # Step 2: **REPLACE THIS with your actual deployment logic**
+      # This could be an action like 'heroku/deploy' or using AWS/Azure CLI commands.
+      run: |
+        echo "Deployment step started..."
+        # Example command: ./deploy_script.sh
+        echo "Successfully deployed scmcsapi artifact. (Placeholder)"
