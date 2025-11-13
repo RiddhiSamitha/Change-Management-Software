@@ -2,7 +2,7 @@ name: CI-CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -20,45 +20,55 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Install dependencies
+      # ==================================
+      # Backend (scms-api) Build & Test
+      # ==================================
+      - name: Install Backend dependencies (scms-api)
         run: |
-          if [ -f package.json ]; then
-            npm ci
-          else
-            echo "No package.json found, skipping npm install"
-          fi
+          cd scms-api
+          npm ci
 
-      - name: Run linting
+      - name: Run Backend Unit Tests (SE-10)
         run: |
-          if [ -f package.json ] && npm list --depth=0 | grep -q eslint; then
-            npm run lint
-          else
-            echo "No linting configured, skipping..."
-          fi
+          cd scms-api
+          npm test
+        env:
+          # Required for JWT generation and database connection decoupling
+          JWT_SECRET: 'a_very_secret_key_for_scms_jwt_12345'
 
-      - name: Run tests
+      # ==================================
+      # Frontend (scms-frontend) Build & Test
+      # ==================================
+      - name: Install Frontend dependencies (scms-frontend)
         run: |
-          if [ -f package.json ] && npm list --depth=0 | grep -q jest; then
-            npm test
-          else
-            echo "No tests configured, skipping..."
-          fi
+          cd scms-frontend
+          npm ci
 
-      - name: Build application
+      - name: Run Frontend Tests (Placeholder - if React Testing Library tests exist)
         run: |
-          if [ -f package.json ]; then
-            npm run build --if-present
-          else
-            echo "No build script found, skipping..."
-          fi
+          cd scms-frontend
+          npm test
 
-      - name: Security audit
+      - name: Build Frontend Application (Generate Artifacts)
         run: |
-          if [ -f package.json ]; then
-            npm audit --audit-level=high
-          else
-            echo "No package.json found, skipping security audit"
-          fi
+          cd scms-frontend
+          # Set a mock API URL for the build
+          REACT_APP_API_URL=http://localhost:5000 npm run build
+
+      # ==================================
+      # Quality Gates & Artifacts (SE-11)
+      # ==================================
+      
+      - name: Archive Backend Test Coverage Report (scms-api)
+        uses: actions/upload-artifact@v4
+        with:
+          name: scms-api-coverage-report
+          path: scms-api/coverage/lcov-report/
+
+      - name: Security Audit (scms-api only)
+        run: |
+          cd scms-api
+          npm audit --audit-level=high
 
   deploy:
     needs: build
