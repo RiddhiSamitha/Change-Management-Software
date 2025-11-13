@@ -3,7 +3,7 @@ name: CI/CD Pipeline for scmcsapi
 on:
   # Triggers the workflow on push events to the 'main' branch
   push:
-    branches: [ main ] # Runs on every push to the main branch
+    branches: [ main ] 
   
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -27,7 +27,9 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm' # Cache dependencies for faster runs
+        cache: 'npm' 
+        # FIX: Point the cache dependency path to the package-lock.json inside scmcsapi/
+        cache-dependency-path: 'scmcsapi/package-lock.json' 
 
     - name: Install Dependencies
       # Step 3: Run npm install inside the scmcsapi directory
@@ -35,7 +37,7 @@ jobs:
       working-directory: ./scmcsapi
 
     - name: Run Build and Tests
-      # Step 4: Run build and tests. Failure here causes 'exit code 1'.
+      # Step 4: Run build and tests. This is where most typical code errors cause failure.
       run: |
         npm run build
         npm run test
@@ -47,7 +49,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: scmcsapi-build
-        path: scmcsapi/ # Adjust this path if your build outputs to a specific folder (e.g., scmcsapi/dist)
+        path: scmcsapi/ 
         
   deploy:
     # This job only runs if the 'build' job succeeded
@@ -64,7 +66,6 @@ jobs:
     # --- Deployment Step (You MUST update this) ---
     - name: Deploy to Production Environment
       # Step 2: **REPLACE THIS with your actual deployment logic**
-      # Example: Use specific actions for AWS, Heroku, Azure, etc.
       run: |
         echo "Deployment step started..."
         # Add your specific deployment commands here
