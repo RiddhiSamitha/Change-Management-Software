@@ -28,7 +28,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm' 
-        # CRITICAL FIX: Point the cache dependency path to the correct folder
+        # Correct path to the lock file
         cache-dependency-path: 'scms-api/package-lock.json' 
 
     - name: Install Dependencies
@@ -37,15 +37,14 @@ jobs:
       working-directory: ./scms-api
 
     - name: Run Build and Tests
-      # Step 4: Run build and tests.
+      # Step 4: Runs the new 'build' script successfully, then runs 'test'
       run: |
         npm run build
         npm run test
       working-directory: ./scms-api
-      # Ensure your package.json in scms-api has 'build' and 'test' scripts defined.
 
     - name: Archive Production Artifacts
-      # Step 5: Package the built files if the build/tests passed
+      # Step 5: Package the files if tests passed
       uses: actions/upload-artifact@v4
       with:
         name: scms-api-build
