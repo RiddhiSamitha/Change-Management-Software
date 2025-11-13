@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for scmcsapi
+name: CI/CD Pipeline for scms-api
 
 on:
   # Triggers the workflow on push events to the 'main' branch
@@ -15,7 +15,7 @@ jobs:
     # Define the environment for Node.js
     strategy:
       matrix:
-        node-version: [18.x] # Use a stable, supported Node.js version
+        node-version: [18.x]
         
     steps:
     - name: Checkout Repository
@@ -23,33 +23,33 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Node.js ${{ matrix.node-version }}
-      # Step 2: Set up the Node environment
+      # Step 2: Set up the Node environment with caching
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm' 
-        # FIX: Point the cache dependency path to the package-lock.json inside scmcsapi/
-        cache-dependency-path: 'scmcsapi/package-lock.json' 
+        # CRITICAL FIX: Point the cache dependency path to the correct folder
+        cache-dependency-path: 'scms-api/package-lock.json' 
 
     - name: Install Dependencies
-      # Step 3: Run npm install inside the scmcsapi directory
+      # Step 3: Run npm install inside the correct directory
       run: npm install
-      working-directory: ./scmcsapi
+      working-directory: ./scms-api
 
     - name: Run Build and Tests
-      # Step 4: Run build and tests. This is where most typical code errors cause failure.
+      # Step 4: Run build and tests.
       run: |
         npm run build
         npm run test
-      working-directory: ./scmcsapi
-      # Ensure your package.json in scmcsapi has 'build' and 'test' scripts defined.
+      working-directory: ./scms-api
+      # Ensure your package.json in scms-api has 'build' and 'test' scripts defined.
 
     - name: Archive Production Artifacts
       # Step 5: Package the built files if the build/tests passed
       uses: actions/upload-artifact@v4
       with:
-        name: scmcsapi-build
-        path: scmcsapi/ 
+        name: scms-api-build
+        path: scms-api/ 
         
   deploy:
     # This job only runs if the 'build' job succeeded
@@ -61,7 +61,7 @@ jobs:
       # Step 1: Get the built files
       uses: actions/download-artifact@v4
       with:
-        name: scmcsapi-build
+        name: scms-api-build
         
     # --- Deployment Step (You MUST update this) ---
     - name: Deploy to Production Environment
@@ -69,4 +69,4 @@ jobs:
       run: |
         echo "Deployment step started..."
         # Add your specific deployment commands here
-        echo "Successfully deployed scmcsapi artifact. (Placeholder)"
+        echo "Successfully deployed scms-api artifact. (Placeholder)"
