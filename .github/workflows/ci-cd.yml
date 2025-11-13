@@ -19,7 +19,6 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          # Use both lock files for caching
           cache-dependency-path: |
             scms-api/package-lock.json
             scms-frontend/package-lock.json
@@ -28,34 +27,37 @@ jobs:
       # Backend (scms-api) Build & Test
       # ==================================
       - name: Install Backend dependencies (scms-api)
-        # 🟢 FIX: Use working-directory for reliable installation
-        working-directory: ./scms-api
-        run: npm ci
-
+        uses: npm/cli@v1 # Use dedicated npm action for reliability
+        with:
+          working-directory: scms-api
+          args: ci
+          
       - name: Run Backend Unit Tests (SE-10)
-        # 🟢 FIX: Run npm test directly inside the backend directory
+        # Use simple shell execution for tests, injecting secrets via env
         working-directory: ./scms-api
         run: npm test
         env:
+          # JWT_SECRET is needed for the unit tests to pass authentication checks
           JWT_SECRET: 'a_very_secret_key_for_scms_jwt_12345'
 
       # ==================================
       # Frontend (scms-frontend) Build & Test
       # ==================================
       - name: Install Frontend dependencies (scms-frontend)
-        # 🟢 FIX: Use working-directory for reliable installation
-        working-directory: ./scms-frontend
-        run: npm ci
+        uses: npm/cli@v1 # Use dedicated npm action for reliability
+        with:
+          working-directory: scms-frontend
+          args: ci
 
       - name: Run Frontend Tests (Bypass CI Failure)
         working-directory: ./scms-frontend
-        # Runs tests, but the '|| true' ensures the CI step passes even if frontend tests fail
+        # Run tests, and use `|| true` to ensure the CI pipeline doesn't stop even if tests fail
         run: npm test -- --watchAll=false || true 
 
       - name: Build Frontend Application
         working-directory: ./scms-frontend
-        # 🟢 FIX: Correctly inject REACT_APP_API_URL using cross-env style
-        run: REACT_APP_API_URL=${{ env.REACT_APP_API_URL }} npm run build
+        # Use the env block to reliably set the build variable
+        run: npm run build
         env:
           REACT_APP_API_URL: http://localhost:5000
 
@@ -79,6 +81,5 @@ jobs:
     if: always() && github.ref == 'refs/heads/main'
     
     steps:
-      # ... Deployment Steps ...
       - name: Deployment Placeholder
         run: echo "Deployment would occur here after a successful build and test."
