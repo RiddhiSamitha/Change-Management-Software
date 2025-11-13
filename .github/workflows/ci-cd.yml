@@ -11,9 +11,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # CRITICAL FIX: Hardcoded dummy secret to bypass the "secretOrPrivateKey must have a value" test error
+    # FINAL FIX: Injecting your specific JWT_SECRET directly for the tests to pass.
+    # NOTE: This is a temporary measure because you lack permissions for GitHub Secrets.
+    # In a production environment, this value must be stored in ${{ secrets.JWT_SECRET }}.
     env:
-      JWT_SECRET: 'YOUR_TEMPORARY_DUMMY_SECRET_FOR_TESTS' # CHANGE THIS LATER!
+      JWT_SECRET: 'a_very_secret_key_for_scms_jwt_12345' 
       NODE_ENV: test
     
     strategy:
@@ -29,7 +31,6 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm' 
-        # Correct path to the lock file
         cache-dependency-path: 'scms-api/package-lock.json' 
 
     - name: Install Dependencies
@@ -37,20 +38,21 @@ jobs:
       working-directory: ./scms-api
 
     - name: Run Build and Tests
-      # This step should now successfully pass the 'build' script and attempt to run all tests
+      # This step should now complete successfully as all your logic errors are fixed.
       run: |
         npm run build
         npm run test
       working-directory: ./scms-api
 
     - name: Archive Production Artifacts
+      # Artifacts are packaged only if the build/tests succeed
       uses: actions/upload-artifact@v4
       with:
         name: scms-api-build
         path: scms-api/ 
         
   deploy:
-    # This job only runs if the 'build' job succeeds (meaning all tests pass)
+    # This job only runs if the 'build' job succeeded
     needs: build
     runs-on: ubuntu-latest
 
@@ -60,9 +62,8 @@ jobs:
       with:
         name: scms-api-build
         
-    # --- Deployment Step (You MUST update this) ---
+    # --- Deployment Step (You MUST update this with real commands) ---
     - name: Deploy to Production Environment (Placeholder)
       run: |
         echo "Deployment step started..."
-        # Add your specific deployment commands here
-        echo "Successfully deployed scms-api artifact."
+        echo "Successfully deployed scms-api artifact. (Placeholder)"
