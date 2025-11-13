@@ -11,19 +11,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # CRITICAL FIX: Hardcoded dummy secret to bypass the "secretOrPrivateKey must have a value" test error
+    env:
+      JWT_SECRET: 'YOUR_TEMPORARY_DUMMY_SECRET_FOR_TESTS' # CHANGE THIS LATER!
+      NODE_ENV: test
     
-    # Define the environment for Node.js
     strategy:
       matrix:
         node-version: [18.x]
         
     steps:
     - name: Checkout Repository
-      # Step 1: Get the code
       uses: actions/checkout@v4
 
     - name: Set up Node.js ${{ matrix.node-version }}
-      # Step 2: Set up the Node environment with caching
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
@@ -32,40 +33,36 @@ jobs:
         cache-dependency-path: 'scms-api/package-lock.json' 
 
     - name: Install Dependencies
-      # Step 3: Run npm install inside the correct directory
       run: npm install
       working-directory: ./scms-api
 
     - name: Run Build and Tests
-      # Step 4: Runs the new 'build' script successfully, then runs 'test'
+      # This step should now successfully pass the 'build' script and attempt to run all tests
       run: |
         npm run build
         npm run test
       working-directory: ./scms-api
 
     - name: Archive Production Artifacts
-      # Step 5: Package the files if tests passed
       uses: actions/upload-artifact@v4
       with:
         name: scms-api-build
         path: scms-api/ 
         
   deploy:
-    # This job only runs if the 'build' job succeeded
+    # This job only runs if the 'build' job succeeds (meaning all tests pass)
     needs: build
     runs-on: ubuntu-latest
 
     steps:
     - name: Download Artifacts
-      # Step 1: Get the built files
       uses: actions/download-artifact@v4
       with:
         name: scms-api-build
         
     # --- Deployment Step (You MUST update this) ---
-    - name: Deploy to Production Environment
-      # Step 2: **REPLACE THIS with your actual deployment logic**
+    - name: Deploy to Production Environment (Placeholder)
       run: |
         echo "Deployment step started..."
         # Add your specific deployment commands here
-        echo "Successfully deployed scms-api artifact. (Placeholder)"
+        echo "Successfully deployed scms-api artifact."
