@@ -23,9 +23,10 @@ export default function Login() {
       // Login successful, redirect to dashboard
       navigate("/dashboard");
     } catch (err) {
-      // Catch the error message thrown by the AuthContext login function
-      // AuthContext throws a standard Error object (err.message)
-      setError(err.message || "Login failed. Please check your network or server connection.");
+      // (LOGIN-02, 03)
+      // This will now display the specific error ("User not found"
+      // or "Invalid password") thrown from the AuthContext.
+      setError(err.message);
     } finally {
       setLoading(false);
     }

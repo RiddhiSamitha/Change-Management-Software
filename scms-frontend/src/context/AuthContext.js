@@ -49,34 +49,38 @@ export const AuthProvider = ({ children }) => {
     setLoading(false); 
   }, []); // Run only once on mount
 
-  // ** THE FIX IS HERE **
-  // This function now automatically logs the user in after registering
+  // (REG-01, REG-07)
   const register = async (email, password, role = 'Developer') => {
     try {
+      // authAPI.register returns the full response: { message, token, user }
       const response = await authAPI.register(email, password, role);
       
       const newToken = response.token;
-      const newUser = response.user;
+      const newUser = response.user; // { id, email, role }
 
       if (!newUser || !newUser.id) {
         throw new Error("Invalid user data received from server.");
       }
 
+      // Automatically log the user in
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(newUser));
       
       setToken(newToken);
       setUser(newUser);
       
-      return response;
+      return response; // Return the full response to the page
     } catch (error) {
-      throw error.response?.data || error;
+      // (REG-02, 03, 04, 05) Pass the specific error message from the backend
+      const errorMessage = error.response?.data?.error || 'Registration failed. Please try again.';
+      throw new Error(errorMessage);
     }
   };
 
-  // This login function is correct.
+  // (LOGIN-01, 02, 03)
   const login = async (email, password) => {
     try {
+      // authAPI.login returns { token, user: { id, email, role } }
       const response = await authAPI.login(email, password);
       
       const newToken = response.token;
@@ -94,13 +98,16 @@ export const AuthProvider = ({ children }) => {
       
       return response;
     } catch (error) {
-      throw error.response?.data || error;
+      // (LOGIN-02, 03) Pass the specific error message from the backend
+      const errorMessage = error.response?.data?.error || 'Login failed. Please try again.';
+      throw new Error(errorMessage);
     }
   };
 
-  // This logout function is correct.
+  // (LOGIN-07)
   const logout = async () => {
     try {
+        // We don't have a backend /logout route, so we just clear locally
         await authAPI.logout(); 
     } catch (error) {
         console.warn('Logout API call failed, proceeding with local logout:', error);

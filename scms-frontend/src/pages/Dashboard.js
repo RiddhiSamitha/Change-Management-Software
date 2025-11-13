@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { crAPI } from '../config/api'; 
+import { FileUp, Eye, Trash2, Edit3 } from 'lucide-react';
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function Dashboard() {
     const [statusFilter, setStatusFilter] = useState('All');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [loadingCrId, setLoadingCrId] = useState(null);
 
     useEffect(() => {
         if (!user) {
@@ -29,16 +31,11 @@ export default function Dashboard() {
         }
     }, [statusFilter, crs]);
 
-    // This fetch function is correct for the MERN backend
     const fetchCRs = async () => {
         setLoading(true);
         try {
-            // This now calls GET /api/change-requests
             const response = await crAPI.getAll(); 
-
-            // This correctly parses the response { changeRequests: [...] }
             const changeRequests = response?.changeRequests || [];
-
             setCRs(changeRequests);
             setFilteredCRs(changeRequests);
             setError('');
@@ -52,13 +49,45 @@ export default function Dashboard() {
         }
     };
 
+    const handleSubmitForApproval = async (crId) => {
+        setLoadingCrId(crId);
+        setError('');
+        try {
+            const updatedCR = await crAPI.submitForApproval(crId);
+            setCRs(prevCRs => 
+                prevCRs.map(cr => 
+                    cr._id === crId ? { ...cr, status: updatedCR.status, submittedAt: updatedCR.submittedAt } : cr
+                )
+            );
+        } catch (err) {
+            console.error('Failed to submit CR:', err);
+            setError(err.response?.data?.message || 'Failed to submit for approval.');
+        } finally {
+            setLoadingCrId(null);
+        }
+    };
+
+    const handleDelete = async (crId) => {
+        setLoadingCrId(crId);
+        setError('');
+        try {
+            await crAPI.delete(crId);
+            setCRs(prevCRs => prevCRs.filter(cr => cr._id !== crId));
+        } catch (err) {
+            console.error('Failed to delete CR:', err);
+            setError(err.response?.data?.message || 'Failed to delete CR.');
+        } finally {
+            setLoadingCrId(null);
+        }
+    };
+
     const getStatusColor = (status) => {
         const colors = {
             Draft: 'bg-gray-100 text-gray-800 border-gray-300',
             Pending: 'bg-yellow-100 text-yellow-800 border-yellow-400',
             Approved: 'bg-green-100 text-green-800 border-green-400',
             Rejected: 'bg-red-100 text-red-800 border-red-400',
-            'In Progress': 'bg-blue-100 text-blue-800 border-blue-400'
+            Closed: 'bg-gray-300 text-gray-900 border-gray-400'
         };
         return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
@@ -77,12 +106,11 @@ export default function Dashboard() {
         navigate('/login');
     };
 
-    // This logic is all correct
+    // --- Stats grid ---
     const totalCount = crs.length;
     const pendingCount = crs.filter(cr => cr.status === 'Pending').length;
     const approvedCount = crs.filter(cr => cr.status === 'Approved').length;
     const rejectedCount = crs.filter(cr => cr.status === 'Rejected').length;
-    const inProgressCount = crs.filter(cr => cr.status === 'In Progress').length;
 
     if (loading) {
         return (
@@ -95,9 +123,54 @@ export default function Dashboard() {
         );
     }
 
+    const renderActions = (cr) => {
+        const isDraft = cr.status === 'Draft';
+        const isLoading = loadingCrId === cr._id;
+
+        if (isDraft) {
+            return (
+                <>
+                    <button 
+                        onClick={() => handleSubmitForApproval(cr._id)}
+                        disabled={isLoading}
+                        className="flex items-center gap-1 text-sm font-medium text-green-600 hover:text-green-800 disabled:opacity-50 disabled:cursor-wait"
+                    >
+                        <FileUp size={14} />
+                        {isLoading ? 'Submitting...' : 'Submit'}
+                    </button>
+                    <button 
+                        onClick={() => navigate(`/cr/edit/${cr._id}`)}
+                        disabled={isLoading}
+                        className="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                    >
+                        <Edit3 size={14} />
+                        Edit
+                    </button>
+                    <button 
+                        onClick={() => handleDelete(cr._id)}
+                        disabled={isLoading}
+                        className="flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-wait"
+                    >
+                        <Trash2 size={14} />
+                        {isLoading ? 'Deleting...' : 'Delete'}
+                    </button>
+                </>
+            );
+        }
+
+        return (
+            <button 
+                onClick={() => navigate(`/cr/view/${cr._id}`)}
+                className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+            >
+                <Eye size={14} />
+                View
+            </button>
+        );
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
-            {/* Header */}
             <header className="bg-white shadow-md">
                 <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
                     <div>
@@ -115,10 +188,8 @@ export default function Dashboard() {
                 </div>
             </header>
 
-            {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-5 mb-8">
+                <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 mb-8">
                     <div className="bg-white overflow-hidden shadow-xl rounded-xl border-b-4 border-gray-300">
                         <div className="px-4 py-5 sm:p-6">
                             <dt className="text-sm font-medium text-gray-500 truncate">Total CRs</dt>
@@ -129,12 +200,6 @@ export default function Dashboard() {
                         <div className="px-4 py-5 sm:p-6">
                             <dt className="text-sm font-medium text-gray-500 truncate">Pending Review</dt>
                             <dd className="mt-1 text-4xl font-extrabold text-yellow-600">{pendingCount}</dd>
-                        </div>
-                    </div>
-                    <div className="bg-white overflow-hidden shadow-xl rounded-xl border-b-4 border-blue-400">
-                        <div className="px-4 py-5 sm:p-6">
-                            <dt className="text-sm font-medium text-gray-500 truncate">In Progress</dt>
-                            <dd className="mt-1 text-4xl font-extrabold text-blue-600">{inProgressCount}</dd>
                         </div>
                     </div>
                     <div className="bg-white overflow-hidden shadow-xl rounded-xl border-b-4 border-green-400">
@@ -155,7 +220,6 @@ export default function Dashboard() {
                     Change Request Log ({filteredCRs.length} items)
                 </h2>
 
-                {/* Filters */}
                 <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <button
                         onClick={() => navigate('/submit-cr')}
@@ -181,20 +245,17 @@ export default function Dashboard() {
                             <option value="Draft">Draft</option>
                             <option value="Pending">Pending</option>
                             <option value="Approved">Approved</option>
-                            <option value="Rejected">Rejected</option>
-                            <option value="In Progress">In Progress</option>
+                            <option value="Rejected/Closed">Rejected</option>
                         </select>
                     </div>
                 </div>
 
-                {/* Error Message */}
                 {error && (
                     <div className="mb-6 bg-red-100 border border-red-400 rounded-lg p-4">
                         <p className="text-red-800 font-medium">Warning: {error}</p>
                     </div>
                 )}
 
-                {/* CR Table */}
                 {filteredCRs.length === 0 && !loading ? (
                     <div className="bg-white rounded-xl shadow-lg p-12 text-center border-2 border-dashed border-gray-300">
                         <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -209,41 +270,43 @@ export default function Dashboard() {
                             <thead className="bg-gray-100">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">CR Number</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[35%]">Title</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[30%]">Title</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[15%]">Category</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[15%]">Date</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[15%]">Actions</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[15%]">Last Updated</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">Created By</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                                            {filteredCRs.map((cr) => (
-                                                                // 1. Uses cr._id, which is correct
-                                                                <tr key={cr._id} className="hover:bg-blue-50 transition duration-150">
-                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 w-[10%]">{cr.cr_number}</td>
-                                                                    <td className="px-6 py-4 text-sm text-gray-800 truncate w-[35%]">{cr.title}</td>
-                                                                    <td className="px-6 py-4 whitespace-nowrap w-[15%]">
-                                                                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getCategoryColor(cr.category)}`}>
-                                                                            {cr.category}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td className="px-6 py-4 whitespace-nowrap w-[10%]">
-                                                                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusColor(cr.status)}`}>
-                                                                            {cr.status}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-[15%]">
-                                                                        {/* 2. CHANGED: Use cr.updatedAt (from Mongoose)
-                                                                        to match "Last Updated" requirement
-                                                                        */}
-                                                                        {new Date(cr.updatedAt).toLocaleDateString()}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium w-[15%]">
-                                                                        <button className="text-blue-600 hover:text-blue-800 transition">View</button>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
+                                {filteredCRs.map((cr) => (
+                                    <tr key={cr._id} className="hover:bg-blue-50 transition duration-150">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{cr.cr_number}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-800 truncate" title={cr.title}>{cr.title}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getCategoryColor(cr.category)}`}>
+                                                {cr.category}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusColor(cr.status)}`}>
+                                                {cr.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {new Date(cr.updatedAt).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate" title={cr.createdBy?.email}>
+                                            {cr.createdBy?.email || 'N/A'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div className="flex items-center gap-3">
+                                                {renderActions(cr)}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
                         </table>
                     </div>
                 )}

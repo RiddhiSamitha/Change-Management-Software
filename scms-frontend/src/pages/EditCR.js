@@ -1,13 +1,15 @@
-// src/pages/SubmitCR.js
-// This file remains UNCHANGED as its job is to *create* a 'Draft'.
-// The new "Submit for Approval" logic lives on the Dashboard.
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// ============================================
+// EditCR.js - FIXED VERSION
+// ============================================
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { crAPI } from '../config/api'; 
+import { useAuth } from '../context/AuthContext';
 
-export default function SubmitCR() {
+export default function EditCR() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -15,12 +17,52 @@ export default function SubmitCR() {
     category: 'Normal',
     priority: 'Medium',
     impact_scope: '',
-    attachments: '' // <-- NEW FIELD FOR SE-8
+    attachments: ''
   });
   
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const fetchCR = async () => {
+      setLoading(true);
+      try {
+        const response = await crAPI.getOne(id);
+        const cr = response.changeRequest;
+
+        // Security check
+        if (!cr.createdBy || cr.createdBy._id !== user?.id || cr.status !== 'Draft') {
+            setErrors({ submit: 'You do not have permission to edit this Change Request.' });
+            setTimeout(() => navigate('/dashboard'), 2000);
+            return;
+        }
+
+        setFormData({
+            title: cr.title || '',
+            description: cr.description || '',
+            category: cr.category || 'Normal',
+            priority: cr.priority || 'Medium',
+            impact_scope: cr.impact_scope || '',
+            attachments: cr.attachments?.[0] || ''
+        });
+      } catch (err) {
+        console.error('Error fetching CR:', err);
+        if (err.response?.status === 404) {
+          setErrors({ submit: 'Change Request not found. It may have been deleted.' });
+        } else if (err.response?.status === 403) {
+          setErrors({ submit: 'You do not have permission to edit this Change Request.' });
+        } else {
+          setErrors({ submit: 'Failed to load CR data. Please try again.' });
+        }
+        setTimeout(() => navigate('/dashboard'), 2000);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCR();
+  }, [id, user?.id, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -32,42 +74,33 @@ export default function SubmitCR() {
 
   const validateForm = () => {
     const newErrors = {};
-    
-    // SE-8: Required fields validated
     if (!formData.title || formData.title.trim().length < 10) {
       newErrors.title = 'Title must be at least 10 characters';
-    } else if (formData.title.length > 500) {
-      newErrors.title = 'Title must not exceed 500 characters';
     }
-    
     if (!formData.description || formData.description.trim().length < 20) {
       newErrors.description = 'Description must be at least 20 characters';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // This function correctly creates a new CR in 'Draft' status
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
     
-    setLoading(true);
+    setSubmitLoading(true);
     try {
-      // This function now calls your MERN backend with all form data
-      await crAPI.create(formData); 
+      await crAPI.update(id, formData); 
       setSuccess(true);
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
     } catch (error) {
       setErrors({
-        submit: error.response?.data?.message || 'Failed to submit CR. Please try again.'
+        submit: error.response?.data?.message || 'Failed to update CR. Please try again.'
       });
     } finally {
-      setLoading(false);
+      setSubmitLoading(false);
     }
   };
 
@@ -75,29 +108,33 @@ export default function SubmitCR() {
     navigate('/dashboard');
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-4xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-bold text-gray-900">Submit Change Request</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Create a new change request for review and approval
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Edit Change Request</h1>
+          <p className="mt-1 text-sm text-gray-600">Update your 'Draft' change request before submission.</p>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="bg-white shadow rounded-lg p-6">
           {success && (
             <div className="mb-6 rounded-md bg-green-50 p-4">
               <p className="text-sm font-medium text-green-800">
-                ✓ Change request submitted successfully! Redirecting to dashboard...
+                ✓ Change request updated successfully! Redirecting to dashboard...
               </p>
             </div>
           )}
-
+          
           {errors.submit && (
             <div className="mb-6 rounded-md bg-red-50 p-4">
               <p className="text-sm font-medium text-red-800">{errors.submit}</p>
@@ -105,7 +142,6 @@ export default function SubmitCR() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title */}
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                 Title <span className="text-red-500">*</span>
@@ -117,21 +153,13 @@ export default function SubmitCR() {
                 value={formData.title}
                 onChange={handleChange}
                 className={`mt-1 block w-full px-3 py-2 border ${
-                  errors.title
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  errors.title ? 'border-red-300' : 'border-gray-300'
                 } rounded-md shadow-sm sm:text-sm`}
                 placeholder="Brief summary of the change (10-500 characters)"
               />
-              <p className="mt-1 text-xs text-gray-500">
-                {formData.title.length}/500 characters
-              </p>
-              {errors.title && (
-                <p className="mt-1 text-sm text-red-600">{errors.title}</p>
-              )}
+              {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
             </div>
 
-            {/* Description */}
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700">
                 Description <span className="text-red-500">*</span>
@@ -143,18 +171,13 @@ export default function SubmitCR() {
                 value={formData.description}
                 onChange={handleChange}
                 className={`mt-1 block w-full px-3 py-2 border ${
-                  errors.description
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  errors.description ? 'border-red-300' : 'border-gray-300'
                 } rounded-md shadow-sm sm:text-sm`}
-                placeholder="Detailed description of the change request, including purpose, scope, and expected outcomes..."
+                placeholder="Detailed description..."
               />
-              {errors.description && (
-                <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-              )}
+              {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
             </div>
 
-            {/* Category and Priority */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
                 <label htmlFor="category" className="block text-sm font-medium text-gray-700">
@@ -165,17 +188,12 @@ export default function SubmitCR() {
                   id="category"
                   value={formData.category}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
                 >
                   <option value="Normal">Normal</option>
                   <option value="Standard">Standard</option>
                   <option value="Emergency">Emergency</option>
                 </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  {formData.category === 'Emergency' && 'Requires immediate implementation'}
-                  {formData.category === 'Standard' && 'Pre-approved change type'}
-                  {formData.category === 'Normal' && 'Standard approval workflow'}
-                </p>
               </div>
 
               <div>
@@ -187,7 +205,7 @@ export default function SubmitCR() {
                   id="priority"
                   value={formData.priority}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -196,7 +214,6 @@ export default function SubmitCR() {
               </div>
             </div>
 
-            {/* Impact Scope */}
             <div>
               <label htmlFor="impact_scope" className="block text-sm font-medium text-gray-700">
                 Impact Scope
@@ -207,15 +224,11 @@ export default function SubmitCR() {
                 id="impact_scope"
                 value={formData.impact_scope}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="e.g., Frontend, Backend, Database, API, Authentication"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
+                placeholder="e.g., Frontend, Backend, Database"
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Specify which parts of the system will be affected by this change
-              </p>
             </div>
             
-            {/* --- NEW ATTACHMENTS FIELD --- */}
             <div>
               <label htmlFor="attachments" className="block text-sm font-medium text-gray-700">
                 Attachment URL (Optional)
@@ -226,28 +239,23 @@ export default function SubmitCR() {
                 id="attachments"
                 value={formData.attachments}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="e.g., http://link-to-your-design-doc-or-screenshot.com"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
+                placeholder="http://link-to-document.com"
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Link to any relevant documents, mockups, or logs.
-              </p>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-4 pt-4">
               <button
                 type="submit"
-                disabled={loading}
-                className="flex-1 justify-center py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={submitLoading}
+                className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
-                {/* This button correctly says "Submit" which creates a Draft */}
-                {loading ? 'Saving Draft...' : 'Save Draft'}
+                {submitLoading ? 'Saving Changes...' : 'Save Changes'}
               </button>
               <button
                 type="button"
                 onClick={handleCancel}
-                className="flex-1 justify-center py-3 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="flex-1 py-3 px-4 border border-gray-300 bg-white text-gray-700 rounded-md hover:bg-gray-50"
               >
                 Cancel
               </button>

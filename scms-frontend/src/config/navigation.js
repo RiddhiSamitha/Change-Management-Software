@@ -18,6 +18,8 @@ const NavLink = ({ to, icon, text }) => (
 const RoleSidebar = ({ userRole }) => {
   switch (userRole) {
     case 'Developer':
+    case 'QA Engineer':
+    case 'DevOps Engineer':
       return (
         <nav className="flex flex-col space-y-1">
           <NavLink to="/dashboard" icon={<LayoutDashboard size={18} />} text="My Dashboard" />
@@ -25,21 +27,48 @@ const RoleSidebar = ({ userRole }) => {
         </nav>
       );
     
+    case 'Reviewer':
+      return (
+        <nav className="flex flex-col space-y-1">
+          <NavLink to="/reviewer-dashboard" icon={<ClipboardList size={18} />} text="Review Dashboard" />
+          <NavLink to="/reviewer-dashboard" icon={<ShieldCheck size={18} />} text="Pending Approvals" />
+        </nav>
+      );
+    
     case 'Technical Lead':
       return (
         <nav className="flex flex-col space-y-1">
-          <NavLink to="/dashboard" icon={<ClipboardList size={18} />} text="Reviews Pending" />
-          <NavLink to="/review-history" icon={<ShieldCheck size={18} />} text="Review History" />
+          <NavLink to="/reviewer-dashboard" icon={<ClipboardList size={18} />} text="Review Dashboard" />
+          <NavLink to="/reviewer-dashboard" icon={<ShieldCheck size={18} />} text="Pending Reviews" />
         </nav>
       );
 
     case 'Change Manager':
       return (
         <nav className="flex flex-col space-y-1">
-          <NavLink to="/dashboard" icon={<LayoutDashboard size={18} />} text="Overview Dashboard" />
+          <NavLink to="/reviewer-dashboard" icon={<LayoutDashboard size={18} />} text="Review Dashboard" />
           <NavLink to="/workflow-config" icon={<Settings size={18} />} text="Workflow Config" />
           <NavLink to="/cab-meetings" icon={<Package size={18} />} text="CAB Meetings" />
           <NavLink to="/reports" icon={<FileText size={18} />} text="Reports" />
+        </nav>
+      );
+
+    case 'Release Manager':
+      return (
+        <nav className="flex flex-col space-y-1">
+          <NavLink to="/reviewer-dashboard" icon={<LayoutDashboard size={18} />} text="Review Dashboard" />
+          <NavLink to="/releases" icon={<Package size={18} />} text="Releases" />
+          <NavLink to="/reports" icon={<FileText size={18} />} text="Reports" />
+        </nav>
+      );
+
+    case 'System Administrator':
+    case 'Admin':
+      return (
+        <nav className="flex flex-col space-y-1">
+          <NavLink to="/admin-dashboard" icon={<ShieldAlert size={18} />} text="Admin Dashboard" />
+          <NavLink to="/reviewer-dashboard" icon={<LayoutDashboard size={18} />} text="Review Dashboard" />
+          <NavLink to="/audit-logs" icon={<ShieldAlert size={18} />} text="Audit Logs" />
         </nav>
       );
     
@@ -50,8 +79,6 @@ const RoleSidebar = ({ userRole }) => {
           <NavLink to="/export-logs" icon={<FileText size={18} />} text="Export Logs" />
         </nav>
       );
-
-    // Add cases for Release Manager, QA, DevOps, System Admin here...
 
     default:
       // Fallback for any other roles

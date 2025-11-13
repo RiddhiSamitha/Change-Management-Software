@@ -35,45 +35,133 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    // Return a rejected promise with the error
     return Promise.reject(error);
   }
 );
 
-// --- API ENDPOINTS (Updated for MERN) ---
+// --- API ENDPOINTS ---
 
 // 1. Authentication API
 export const authAPI = {
-  // Register new user - hits POST http://localhost:5000/register
   register: async (email, password, role = 'Developer') => {
     const response = await api.post('/register', { email, password, role });
     return response.data;
   },
-
-  // Login user - hits POST http://localhost:5000/login
   login: async (email, password) => {
     const response = await api.post('/login', { email, password });
     return response.data;
   },
-  
-  // Logout (client-side action, just resolves)
   logout: async () => {
+    // No backend route, just resolve client-side
     return Promise.resolve({ message: "Logout successful" });
   }
 };
 
-// 2. Change Request (CR) API - CONNECTED TO MERN BACKEND
+// 2. Change Request (CR) API
 export const crAPI = {
-    // Fetches all CRs from GET http://localhost:5000/api/change-requests
+    // Get all CRs (filtered by user role on backend)
     getAll: async () => {
-        // This middleware in the backend (authMiddleware) will
-        // automatically filter CRs for the logged-in user
         const response = await api.get('/api/change-requests');
-        return response.data; // Returns { changeRequests: [...] }
+        return response.data; 
     },
-    // Creates a new CR at POST http://localhost:5000/api/change-requests
+    
+    // Create new CR
     create: async (formData) => {
         const response = await api.post('/api/change-requests', formData);
-        return response.data; // Returns the new CR object
+        return response.data;
+    },
+    
+    // Get single CR by ID
+    getOne: async (id) => {
+      const response = await api.get(`/api/change-requests/${id}`);
+      return response.data; 
+    },
+    
+    // Update existing CR (for Draft status)
+    update: async (id, formData) => {
+      const response = await api.put(`/api/change-requests/${id}`, formData);
+      return response.data;
+    },
+    
+    // Submit CR for approval (Draft -> Pending)
+    submitForApproval: async (id) => {
+      const response = await api.put(`/api/change-requests/${id}/submit`);
+      return response.data;
+    },
+    
+    // Approve CR (Reviewer only) - UPDATED to accept comment
+    approve: async (id, comment) => {
+      const response = await api.put(`/api/change-requests/${id}/approve`, { 
+        comment: comment || 'Approved' 
+      });
+      return response.data;
+    },
+    
+    // Reject CR (Reviewer only) - UPDATED to accept comment
+    reject: async (id, comment) => {
+      const response = await api.put(`/api/change-requests/${id}/reject`, { 
+        comment: comment || 'Rejected',
+        reason: comment || 'Rejected' // Some backends might expect 'reason' instead
+      });
+      return response.data;
+    },
+    
+    // Delete CR (Draft only)
+    delete: async (id) => {
+      const response = await api.delete(`/api/change-requests/${id}`);
+      return response.data;
+    },
+    
+    // Add comment to CR
+    addComment: async (id, comment) => {
+      const response = await api.post(`/api/change-requests/${id}/comments`, { 
+        comment 
+      });
+      return response.data;
+    },
+    
+    // Get comments for a CR
+    getComments: async (id) => {
+      const response = await api.get(`/api/change-requests/${id}/comments`);
+      return response.data;
+    }
+};
+
+// 3. Admin API
+export const adminAPI = {
+    // User Management
+    getAllUsers: async () => {
+      const response = await api.get('/api/admin/users');
+      return response.data;
+    },
+    getUser: async (id) => {
+      const response = await api.get(`/api/admin/users/${id}`);
+      return response.data;
+    },
+    createUser: async (userData) => {
+      const response = await api.post('/api/admin/users', userData);
+      return response.data;
+    },
+    updateUser: async (id, userData) => {
+      const response = await api.put(`/api/admin/users/${id}`, userData);
+      return response.data;
+    },
+    deleteUser: async (id) => {
+      const response = await api.delete(`/api/admin/users/${id}`);
+      return response.data;
+    },
+    
+    // Statistics
+    getStatistics: async () => {
+      const response = await api.get('/api/admin/statistics');
+      return response.data;
+    },
+    
+    // All CRs (Admin view)
+    getAllCRs: async () => {
+      const response = await api.get('/api/admin/change-requests');
+      return response.data;
     }
 };
 

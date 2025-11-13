@@ -7,6 +7,7 @@ const { body, validationResult } = require('express-validator');
 const router = express.Router();
 
 // --- POST /register ---
+// (REG-01, 02, 03, 04, 05, 06, 07)
 router.post(
   '/register',
   [
@@ -23,19 +24,20 @@ router.post(
     try {
       let user = await User.findOne({ email });
       if (user) {
+        // (REG-02)
         return res.status(400).json({ error: 'Email already registered' });
       }
       user = new User({ email, password, role });
-      await user.save();
+      await user.save(); // (REG-06) bcrypt hash happens in User.js model
 
       const payload = {
         user: { id: user.id, role: user.role, email: user.email }
       };
+      
+      // (REG-01, REG-07) Issue JWT on successful registration
       const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
 
-      // ** THE FIX IS HERE **
-      // Send the *same* response structure as the /login route
-      // This makes your code consistent
+      // Return the same structure as login for consistency
       res.status(201).json({
         message: 'User registered successfully',
         token: token,
@@ -54,19 +56,23 @@ router.post(
 
 
 // --- POST /login ---
+// (LOGIN-01, 02, 03)
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ error: 'Invalid email or password' });
+      // (LOGIN-03) Specific error for user not found
+      return res.status(400).json({ error: 'User not found' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid email or password' });
+      // (LOGIN-02) Specific error for invalid password
+      return res.status(400).json({ error: 'Invalid password' });
     }
 
+    // (LOGIN-01) User is valid, create payload and token
     const payload = {
       user: { 
         id: user.id, // Use MongoDB's 'id'
@@ -78,10 +84,9 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       payload, 
       process.env.JWT_SECRET, 
-      { expiresIn: '24h' }
+      { expiresIn: '24h' } // (LOGIN-06) Token expiry is set
     );
 
-    // This response is correct and matches AuthContext.js
     res.json({
       token,
       user: {
@@ -96,6 +101,4 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ** THE FIX IS HERE **
-// The file was exporting twice. Only export once at the end.
 module.exports = router;
