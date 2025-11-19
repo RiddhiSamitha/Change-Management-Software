@@ -61,14 +61,14 @@ jobs:
 
     - name: Archive Backend Coverage Report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: backend-coverage-report
         path: scms-api/coverage/
 
     - name: Archive Test Summary
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: backend-test-summary
         path: scms-api/TEST_AND_COVERAGE_SUMMARY.txt
@@ -107,7 +107,7 @@ jobs:
 
     - name: Archive Frontend Coverage Report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: frontend-coverage-report
         path: scms-frontend/coverage/
