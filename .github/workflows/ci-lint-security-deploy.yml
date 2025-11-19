@@ -122,7 +122,7 @@ jobs:
   build-deployment-package:
     needs: [lint-backend, security-backend, lint-frontend, security-frontend]
     runs-on: ubuntu-latest
-    if: success() || contains(job.status, 'success')
+    if: always()
 
     steps:
     - uses: actions/checkout@v3
