@@ -2,9 +2,9 @@ name: Build Test Coverage (SCMS Backend Tests)
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, feature/fix ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, feature/fix ]
 
 jobs:
   backend-tests:

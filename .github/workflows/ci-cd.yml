@@ -2,9 +2,9 @@ name: CI-CD Pipeline (Build & Test)
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, feature/fix]
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, feature/fix]
 
 jobs:
   backend-build-test:
